@@ -434,6 +434,7 @@ int __init omap_wakeupgen_init(void)
 			wakeupgen_writel(0, i, CPU1_ID);
 	}
 
+#ifndef CONFIG_IPIPE
 	/*
 	 * Override GIC architecture specific functions to add
 	 * OMAP WakeupGen interrupt controller along with GIC
@@ -441,6 +442,7 @@ int __init omap_wakeupgen_init(void)
 	gic_arch_extn.irq_mask = wakeupgen_mask;
 	gic_arch_extn.irq_unmask = wakeupgen_unmask;
 	gic_arch_extn.flags = IRQCHIP_MASK_ON_SUSPEND | IRQCHIP_SKIP_SET_WAKE;
+#endif
 
 	/*
 	 * FIXME: Add support to set_smp_affinity() once the core

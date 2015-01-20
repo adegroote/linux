@@ -23,7 +23,7 @@
 #include <asm/asm-offsets.h>
 
 	.macro	DBGSTR, str
-#ifdef DEBUG
+#if defined(DEBUG)
 	stmfd	sp!, {r0-r3, ip, lr}
 	ldr	r0, =1f
 	bl	printk
@@ -37,7 +37,7 @@
 	.endm
 
 	.macro  DBGSTR1, str, arg
-#ifdef DEBUG
+#if defined(DEBUG)
 	stmfd	sp!, {r0-r3, ip, lr}
 	mov	r1, \arg
 	ldr	r0, =1f
@@ -52,7 +52,7 @@
 	.endm
 
 	.macro  DBGSTR3, str, arg1, arg2, arg3
-#ifdef DEBUG
+#if defined(DEBUG)
 	stmfd	sp!, {r0-r3, ip, lr}
 	mov	r3, \arg3
 	mov	r2, \arg2
@@ -106,6 +106,11 @@ ENTRY(vfp_support_entry)
 	@ thread wants ownership of the VFP hardware, save the old
 	@ state if there was a previous (valid) owner.
 
+	enable_irq
+#ifdef CONFIG_IPIPE
+	disable_irq
+	ldr	r4, [r3, r11, lsl #2]	@ reload vfp_current_hw_state pointer
+#endif
 	VFPFMXR	FPEXC, r5		@ enable VFP, disable any pending
 					@ exceptions, so we can get at the
 					@ rest of it
@@ -143,6 +148,15 @@ vfp_reload_hw:
 	beq	vfp_hw_state_valid
 
 vfp_reload_hw:
+	enable_irq
+#ifdef CONFIG_IPIPE
+	disable_irq
+	mrc     p15, 0, ip, c0, c0, 5  @ reload current CPU number
+	and	r11, ip, #255
+	ldr	r4, vfp_cpu_logical_map_address
+	ldr	r11, [r4, r11, lsl #2]
+#endif
+
 	@ We're loading this threads state into the VFP hardware. Update
 	@ the CPU number which contains the most up to date VFP context.
 	str	r11, [r10, #VFP_CPU]
@@ -177,6 +191,7 @@ vfp_hw_state_valid:
 					@ out before setting an FPEXC that
 					@ stops us reading stuff
 	VFPFMXR	FPEXC, r1		@ Restore FPEXC last
+	enable_irq_cond
 	sub	r2, r2, #4		@ Retry current instruction - if Thumb
 	str	r2, [sp, #S_PC]		@ mode it's two 16-bit instructions,
 					@ else it's one 32-bit instruction, so
@@ -200,6 +215,7 @@ look_for_VFP_exceptions:
 	@ Fall into hand on to next handler - appropriate coproc instr
 	@ not recognised by VFP
 
+	enable_irq_cond
 	DBGSTR	"not VFP"
 	dec_preempt_count_ti r10, r4
 	ret	lr
@@ -240,6 +256,10 @@ ENDPROC(vfp_save_state)
 	.align
 vfp_current_hw_state_address:
 	.word	vfp_current_hw_state
+#if defined(CONFIG_IPIPE) && defined(CONFIG_SMP)
+vfp_cpu_logical_map_address:
+	.word	__cpu_logical_map
+#endif
 
 	.macro	tbl_branch, base, tmp, shift
 #ifdef CONFIG_THUMB2_KERNEL

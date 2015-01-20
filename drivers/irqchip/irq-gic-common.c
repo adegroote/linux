@@ -108,7 +108,11 @@ void gic_cpu_config(void __iomem *base, void (*sync_access)(void))
 	 * Set priority on PPI and SGI interrupts
 	 */
 	for (i = 0; i < 32; i += 4)
+#if !defined(CONFIG_IPIPE)
 		writel_relaxed(0xa0a0a0a0, base + GIC_DIST_PRI + i * 4 / 4);
+#else /* IPIPE */
+		writel_relaxed(0x10101010, base + GIC_DIST_PRI + i * 4 / 4);
+#endif /* IPIPE */
 
 	if (sync_access)
 		sync_access();

@@ -179,10 +179,10 @@ static inline int atomic_add_return(int i, atomic_t *v)
 	unsigned long flags;
 	int val;
 
-	raw_local_irq_save(flags);
+	flags = hard_local_irq_save();
 	val = v->counter;
 	v->counter = val += i;
-	raw_local_irq_restore(flags);
+	hard_local_irq_restore(flags);
 
 	return val;
 }
@@ -193,10 +193,10 @@ static inline int atomic_sub_return(int i, atomic_t *v)
 	unsigned long flags;
 	int val;
 
-	raw_local_irq_save(flags);
+	flags = hard_local_irq_save();
 	val = v->counter;
 	v->counter = val -= i;
-	raw_local_irq_restore(flags);
+	hard_local_irq_restore(flags);
 
 	return val;
 }
@@ -207,11 +207,11 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
 	int ret;
 	unsigned long flags;
 
-	raw_local_irq_save(flags);
+	flags = hard_local_irq_save();
 	ret = v->counter;
 	if (likely(ret == old))
 		v->counter = new;
-	raw_local_irq_restore(flags);
+	hard_local_irq_restore(flags);
 
 	return ret;
 }

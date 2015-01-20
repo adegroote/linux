@@ -20,6 +20,7 @@
 
 #include <asm/mach/time.h>
 #include <mach/hardware.h>
+#include "at91_ipipe.h"
 
 #define AT91_PIT_MR		0x00			/* Mode Register */
 #define		AT91_PIT_PITIEN		(1 << 25)		/* Timer Interrupt Enable */
@@ -274,6 +275,8 @@ void __init at91sam926x_pit_init(void)
 	pit_clkevt.mult = div_sc(pit_rate, NSEC_PER_SEC, pit_clkevt.shift);
 	pit_clkevt.cpumask = cpumask_of(0);
 	clockevents_register_device(&pit_clkevt);
+
+	at91_pic_muter_register();
 }
 
 void __init at91sam926x_ioremap_pit(u32 addr)

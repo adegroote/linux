@@ -72,6 +72,12 @@
 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_RAW(3) | IRQ_TYPE_LEVEL_HIGH)>;
 	};
 
+	global_timer: timer@48240200 {
+		compatible = "arm,cortex-a9-global-timer";
+		reg = <0x48240200 0x20>;
+		clocks = <&mpu_periphclk>;
+	};
+
 	/*
 	 * The soc node represents the soc top level view. It is used for IPs
 	 * that are not memory mapped in the MPU view or for the MPU itself.
