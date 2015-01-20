@@ -239,6 +239,23 @@ do {									\
 #define this_cpu_ptr(ptr) raw_cpu_ptr(ptr)
 #endif
 
+#ifdef CONFIG_IPIPE
+#if defined(CONFIG_IPIPE_DEBUG_INTERNAL) && defined(CONFIG_SMP)
+extern int __ipipe_check_percpu_access(void);
+#define __ipipe_cpu_offset					\
+	({							\
+		WARN_ON_ONCE(__ipipe_check_percpu_access());	\
+		__my_cpu_offset;				\
+	})
+#else
+#define __ipipe_cpu_offset  __my_cpu_offset
+#endif
+#ifndef __ipipe_raw_cpu_ptr
+#define __ipipe_raw_cpu_ptr(ptr)  SHIFT_PERCPU_PTR(ptr, __ipipe_cpu_offset)
+#endif
+#define __ipipe_raw_cpu_read(var) (*__ipipe_raw_cpu_ptr(&(var)))
+#endif /* CONFIG_IPIPE */
+
 #else	/* CONFIG_SMP */
 
 #define VERIFY_PERCPU_PTR(__p)						\
@@ -248,6 +265,8 @@ do {									\
 })
 
 #define per_cpu_ptr(ptr, cpu)	({ (void)(cpu); VERIFY_PERCPU_PTR(ptr); })
+#define __ipipe_raw_cpu_ptr(ptr)  VERIFY_PERCPU_PTR(ptr)
+#define __ipipe_raw_cpu_read(var) (*__ipipe_raw_cpu_ptr(&(var)))
 #define raw_cpu_ptr(ptr)	per_cpu_ptr(ptr, 0)
 #define this_cpu_ptr(ptr)	raw_cpu_ptr(ptr)
 
