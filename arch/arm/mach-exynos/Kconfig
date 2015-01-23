@@ -44,6 +44,7 @@ config ARCH_EXYNOS4
 	select GIC_NON_BANKED
 	select KEYBOARD_SAMSUNG if INPUT_KEYBOARD
 	select MIGHT_HAVE_CACHE_L2X0
+	select IPIPE_ARM_KUSER_TSC if IPIPE
 	help
 	  Samsung EXYNOS4 (Cortex-A9) SoC based systems
 
