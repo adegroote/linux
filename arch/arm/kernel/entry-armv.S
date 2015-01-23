@@ -801,6 +801,7 @@ ENTRY(ret_from_exception)
 	bne	__ipipe_ret_to_user_irqs_disabled  @ Fast exit path over non-root domains
 #endif /* !CONFIG_IPIPE_LEGACY */
 #endif /* CONFIG_IPIPE */
+	get_thread_info tsk
 	mov	why, #0
 	b	ret_to_user
  UNWIND(.fnend		)
