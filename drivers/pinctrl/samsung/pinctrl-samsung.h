@@ -146,7 +146,7 @@ struct samsung_pin_bank {
 	struct irq_domain *irq_domain;
 	struct gpio_chip gpio_chip;
 	struct pinctrl_gpio_range grange;
-	spinlock_t slock;
+	ipipe_spinlock_t slock;
 
 	u32 pm_save[PINCFG_TYPE_NUM + 1]; /* +1 to handle double CON registers*/
 };
