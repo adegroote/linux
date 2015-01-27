@@ -82,6 +82,7 @@ enum {
 };
 
 static void __iomem *reg_base;
+static u64 phys_base;
 static unsigned long clk_rate;
 static unsigned int mct_int_type;
 static int mct_irqs[MCT_NR_IRQS];
@@ -227,7 +228,6 @@ static struct __ipipe_tscinfo tsc_info = {
    .type = IPIPE_TSC_TYPE_FREERUNNING,
    .u = {
        {
-           .counter_paddr = EXYNOS4_PA_SYSTIMER + 0x100, // XXX 
            .mask = 0xffffffff,
        },
    },
@@ -262,6 +262,7 @@ static void __init exynos4_clocksource_init(void)
 #if defined(CONFIG_IPIPE)
    tsc_info.freq = clk_rate;
    tsc_info.counter_vaddr = (unsigned long)(reg_base + EXYNOS4_MCT_G_CNT_L);
+   tsc_info.u.counter_paddr = phys_base + EXYNOS4_MCT_G_CNT_L;
    __ipipe_tsc_register(&tsc_info);
 #endif /* CONFIG_IPIPE */
 
@@ -625,6 +626,7 @@ void __init mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1)
 static void __init mct_init_dt(struct device_node *np, unsigned int int_type)
 {
 	u32 nr_irqs, i;
+	struct resource mem;
 
 	mct_int_type = int_type;
 
@@ -643,6 +645,10 @@ static void __init mct_init_dt(struct device_node *np, unsigned int int_type)
 #endif
 	for (i = MCT_L0_IRQ; i < nr_irqs; i++)
 		mct_irqs[i] = irq_of_parse_and_map(np, i);
+
+	if (of_address_to_resource(np, 0, &mem))
+		mem.start = 0;
+	phys_base = mem.start;
 
 	exynos4_timer_resources(np, of_iomap(np, 0));
 	exynos4_clocksource_init();
