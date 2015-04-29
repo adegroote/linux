@@ -1,3 +1,9 @@
+omap3-igep0020-3430.dts: omap3-igep0020.dts omap3430-igep.dtsi
+	sed 's/omap3-igep\.dtsi/omap3430-igep.dtsi/' $< > $@
+
+omap3430-igep.dtsi: omap3-igep.dtsi Makefile
+	sed 's/omap36xx\.dtsi/omap34xx.dtsi/' $< > $@
+
 ifeq ($(CONFIG_OF),y)
 
 # Keep at91 dtb files sorted alphabetically for each SoC

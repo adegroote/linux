@@ -32,6 +32,7 @@
 
 #include <mach/at91_st.h>
 #include <mach/hardware.h>
+#include <mach/at91_ipipe.h>
 
 static unsigned long last_crtr;
 static u32 irqmask;
@@ -271,4 +272,6 @@ void __init at91rm9200_timer_init(void)
 
 	/* register clocksource */
 	clocksource_register_hz(&clk32k, AT91_SLOW_CLOCK);
+
+	at91_pic_muter_register();
 }

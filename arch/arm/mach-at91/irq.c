@@ -125,10 +125,10 @@ at91_aic_handle_irq(struct pt_regs *regs)
 	if (!irqstat)
 		at91_aic_write(AT91_AIC_EOICR, 0);
 	else
-		handle_IRQ(irqnr, regs);
+		ipipe_handle_multi_irq(irqnr, regs);
 }
 
-static void at91_aic_mask_irq(struct irq_data *d)
+static inline void at91_aic_hard_mask_irq(struct irq_data *d)
 {
 	/* Disable interrupt on AIC */
 	at91_aic_write(AT91_AIC_IDCR, 1 << d->hwirq);
@@ -136,7 +136,7 @@ static void at91_aic_mask_irq(struct irq_data *d)
 	clear_backup(d->hwirq);
 }
 
-static void at91_aic_unmask_irq(struct irq_data *d)
+static void at91_aic_hard_unmask_irq(struct irq_data *d)
 {
 	/* Enable interrupt on AIC */
 	at91_aic_write(AT91_AIC_IECR, 1 << d->hwirq);
@@ -209,18 +209,60 @@ static int at91_aic_set_type(struct irq_data *d, unsigned type)
 	return 0;
 }
 
+static void at91_aic_mask_irq(struct irq_data *d)
+{
+	unsigned long flags;
+
+	flags = hard_cond_local_irq_save();
+	at91_aic_hard_mask_irq(d);
+	ipipe_lock_irq(d->irq);
+	hard_cond_local_irq_restore(flags);
+}
+
+static void at91_aic_unmask_irq(struct irq_data *d)
+{
+	unsigned long flags;
+
+	flags = hard_cond_local_irq_save();
+	at91_aic_hard_unmask_irq(d);
+	ipipe_unlock_irq(d->irq);
+	hard_cond_local_irq_restore(flags);
+}
+
+#ifdef CONFIG_IPIPE
+static void at91_aic_hold_irq(struct irq_data *d)
+{
+	at91_aic_hard_mask_irq(d);
+	at91_aic_eoi(d);
+}
+
+static void at91_aic_release_irq(struct irq_data *d)
+{
+	unsigned long flags = hard_local_irq_save();
+	at91_aic_hard_unmask_irq(d);
+	hard_local_irq_restore(flags);
+}
+#endif /* CONFIG_IPIPE */
+
 static struct irq_chip at91_aic_chip = {
-	.name		= "AIC",
-	.irq_mask	= at91_aic_mask_irq,
+	.name           = "AIC",
+	.irq_mask       = at91_aic_mask_irq,
 	.irq_unmask	= at91_aic_unmask_irq,
 	.irq_set_type	= at91_aic_set_type,
 	.irq_set_wake	= at91_aic_set_wake,
 	.irq_eoi	= at91_aic_eoi,
+#ifdef CONFIG_IPIPE
+	.irq_hold	= at91_aic_hold_irq,
+	.irq_release	= at91_aic_release_irq,
+#endif
 };
 
 static void __init at91_aic_hw_init(unsigned int spu_vector)
 {
+	extern unsigned at91_aic;
 	int i;
+
+	at91_aic = 1;
 
 	/*
 	 * Perform 8 End Of Interrupt Command to make sure AIC
